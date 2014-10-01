@@ -44,19 +44,19 @@ var handleList = function(err, data) {
       nextBatch(data.NextMarker);
     } :
     nextPrefix;
-  applyAndContinue(data.Contents, processObject, afterwards);
+  applyAndContinue(data.Contents, false, processObject, afterwards);
 };
 
 var processObject = function(obj, toNextObj, idx) {
   debug('applyFiltersToObject', idx, obj.Key);
-  applyAndContinue(settings.filters, applyFilter.bind(obj), function(err, result) {
-    if (result) {
-      debug('applyActions', obj.Key);
-      applyAndContinue(settings.actions, applyAction.bind(obj), toNextObj);
-    } else {
-      toNextObj();
-    }
-  });
+  applyAndContinue(settings.filters, true, applyFilter.bind(obj), function(err, result) {
+      if (result) {
+        debug('applyActions', obj.Key);
+        applyAndContinue(settings.actions, false, applyAction.bind(obj), toNextObj);
+      } else {
+        toNextObj();
+      }
+    });
 };
 
 var applyAction = function(action, toNextAction, idx) {
@@ -112,21 +112,21 @@ var nextPrefix = function() {
   }
 };
 
-var applyAndContinue = function(arr, cb, after) {
+var applyAndContinue = function(subjects, allowSkip, cb, after) {
   var i = 0;
   var step = function(err, result) {
     if (err) {
       return handleError(err);
     }
-    if (result === false) {
+    if (allowSkip && result === false) {
       debug('skip', i);
       after(null, false);
-    } else if (i >= arr.length) {
+    } else if (i >= subjects.length) {
       debug('after');
       after(null, true);
     } else {
       debug('apply', i);
-      cb(arr[i], step, i++);
+      cb(subjects[i], step, i++);
     }
   };
   step();
