@@ -1,6 +1,6 @@
 {
   "name": "bucketeer",
-  "description": "Bulk-updates Amazon S3 buckets.",
+  "description": "Bulk-updates objects inside an Amazon S3 bucket.",
   "version": "0.1.0",
   "homepage": "https://github.com/timdp/bucketeer",
   "author": {

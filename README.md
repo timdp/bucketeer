@@ -1,7 +1,9 @@
 Bucketeer
 =========
 
-Bulk-updates Amazon S3 buckets.
+Bulk-updates objects inside an Amazon S3 bucket. Determines which objects to
+update based on user-specified filter chains. Applies user-specified actions to
+each matching object.
 
 Author
 ------
