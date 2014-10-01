@@ -1,20 +1,28 @@
 {
   "bucket": "...",
   "region": "us-east-1",
-  "filters": ["passthrough"],
-  "actions": ["empty", "put-acl", "put-metadata"],
-  "options": {
-    "filters": {
+  "filters": [
+    {
+      "name": "passthrough"
+    }
+  ],
+  "actions": [
+    {
+      "name": "empty"
     },
-    "actions": {
-      "put-acl": {
+    {
+      "name": "put-acl",
+      "options": {
         "acl": "public-read"
-      },
-      "put-metadata": {
+      }
+    },
+    {
+      "name": "put-metadata",
+      "options": {
         "data": {
           "cache-control": "max-age=86400"
         }
       }
     }
-  }
+  ]
 }

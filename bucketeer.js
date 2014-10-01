@@ -3,17 +3,14 @@ var _ = require('lodash');
 var debug = require('debug')('bucketeer');
 
 var auth = require('./config/auth.json');
-var settings = _.extend({
-  options: {
-    filters: {},
-    actions: {}
-  }
-}, require('./config/settings.json'));
-var filters = settings.filters.map(function(id) {
-  return require('./filters/' + id + '.js');
+var settings = require('./config/settings.json');
+var filters = {};
+_.uniq(_.pluck(settings.filters, 'name')).forEach(function(name) {
+  filters[name] = require('./filters/' + name + '.js');
 });
-var actions = settings.actions.map(function(id) {
-  return require('./actions/' + id + '.js');
+var actions = {};
+_.uniq(_.pluck(settings.actions, 'name')).forEach(function(name) {
+  actions[name] = require('./actions/' + name + '.js');
 });
 
 AWS.config.update({
@@ -28,15 +25,6 @@ var options = {
   bucket: settings.bucket,
   region: settings.region
 };
-
-var configs = {};
-['filters', 'actions'].forEach(function(type) {
-  configs[type] = settings[type].map(function(id, idx) {
-    return settings.options[type].hasOwnProperty(id) ?
-      _.extend(options, settings.options[type][id]) :
-      options;
-  });
-});
 
 var prefixQueue = [],
     seenPrefixes = {},
@@ -58,10 +46,10 @@ var handleList = function(err, data) {
 
 var processObject = function(obj, toNextObj, idx) {
   debug('applyFiltersToObject', idx, obj.Key);
-  applyAndContinue(filters, applyFilter.bind(obj), function(err, result) {
+  applyAndContinue(settings.filters, applyFilter.bind(obj), function(err, result) {
     if (result) {
       debug('applyActions', obj.Key);
-      applyAndContinue(actions, applyAction.bind(obj), toNextObj);
+      applyAndContinue(settings.actions, applyAction.bind(obj), toNextObj);
     } else {
       toNextObj();
     }
@@ -69,13 +57,17 @@ var processObject = function(obj, toNextObj, idx) {
 };
 
 var applyAction = function(action, toNextAction, idx) {
-  debug('applyAction', idx, this.Key);
-  action(this, configs.actions[idx], toNextAction);
+  debug('applyAction', this.Key, idx, action.name, action.options);
+  var opt = (typeof action.options === 'object') ?
+    _.assign({}, options, action.options) : options;
+  actions[action.name](this, opt, toNextAction);
 };
 
 var applyFilter = function(filter, toNextFilter, idx) {
-  debug('applyFilter', idx, this.Key);
-  filter(this, configs.filters[idx], function(err, result) {
+  debug('applyFilter', this.Key, idx, filter.name, filter.options);
+  var opt = (typeof filter.options === 'object') ?
+    _.assign({}, options, filter.options) : options;
+  filters[filter.name](this, opt, function(err, result) {
     if (err) {
       return toNextFilter(err);
     }
