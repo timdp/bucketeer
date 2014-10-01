@@ -1,0 +1,32 @@
+{
+  "name": "bucketeer",
+  "description": "Bulk-updates Amazon S3 buckets.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/timdp/bucketeer",
+  "author": {
+    "name": "Tim De Pauw",
+    "email": "hi@tmdpw.eu",
+    "url": "http://tmdpw.eu/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/timdp/bucketeer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/timdp/bucketeer/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/timdp/bucketeer/blob/master/LICENSE"
+    }
+  ],
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.0.18",
+    "debug": "^2.0.0",
+    "lodash": "^2.4.1"
+  }
+}
