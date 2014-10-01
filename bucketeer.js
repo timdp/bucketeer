@@ -3,7 +3,10 @@ var _ = require('lodash');
 var debug = require('debug')('bucketeer');
 
 var auth = require('./config/auth.json');
-var settings = require('./config/settings.json');
+var settings = _.assign({
+  region: 'us-east-1',
+  filters: []
+}, require('./config/settings.json'));
 var filters = {};
 _.uniq(_.pluck(settings.filters, 'name')).forEach(function(name) {
   filters[name] = require('./filters/' + name + '.js');
@@ -67,12 +70,7 @@ var applyFilter = function(filter, toNextFilter, idx) {
   debug('applyFilter', this.Key, idx, filter.name, filter.options);
   var opt = (typeof filter.options === 'object') ?
     _.assign({}, options, filter.options) : options;
-  filters[filter.name](this, opt, function(err, result) {
-    if (err) {
-      return toNextFilter(err);
-    }
-    toNextFilter(null, result);
-  });
+  filters[filter.name](this, opt, toNextFilter);
 };
 
 var nextBatch = function(marker) {
