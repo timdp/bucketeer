@@ -7,14 +7,17 @@ var settings = _.assign({
   region: 'us-east-1',
   filters: []
 }, require('./config/settings.json'));
-var filters = {};
-_.uniq(_.pluck(settings.filters, 'name')).forEach(function(name) {
-  filters[name] = require('./filters/' + name + '.js');
-});
-var actions = {};
-_.uniq(_.pluck(settings.actions, 'name')).forEach(function(name) {
-  actions[name] = require('./actions/' + name + '.js');
-});
+
+var loadProcessors = function(type) {
+  var result = {};
+  _.uniq(_.pluck(settings[type], 'name')).forEach(function(name) {
+    result[name] = require('./' + type + '/' + name + '.js');
+  });
+  return result;
+};
+
+var filters = loadProcessors('filters');
+var actions = loadProcessors('actions');
 
 var s3 = new S3Adapter({
   bucket: settings.bucket,
@@ -70,10 +73,6 @@ var applyProcessor = function(proc, obj, opt, cb) {
   proc.bind(procContext)(obj, opt || {}, cb);
 };
 
-var nextBatch = function(marker) {
-  s3.listObjects(currentPrefix, marker, null, handleList);
-};
-
 var addPrefix = function(prefix) {  
   if (!seenPrefixes.hasOwnProperty(prefix)) {
     debug('addPrefix', prefix);
@@ -97,6 +96,10 @@ var nextPrefix = function() {
   } else {
     debug('done');
   }
+};
+
+var nextBatch = function(marker) {
+  s3.listObjects(currentPrefix, marker, null, handleList);
 };
 
 var applyAndContinue = function(subjects, allowSkip, cb, after) {
