@@ -10,7 +10,7 @@ var maybeUpdateObject = function(key, head, newData, s3, cb) {
     }
   }
   if (change) {
-    s3.copyObject(null, key, key, {
+    s3.copyObject(null, key, null, key, {
       ContentType: head.ContentType,
       Metadata: _.assign(head.Metadata, newData),
       MetadataDirective: 'REPLACE'

@@ -14,17 +14,17 @@
       "name": "empty"
     },
     {
-      "name": "put-acl",
-      "options": {
-        "acl": "public-read"
-      }
-    },
-    {
       "name": "put-metadata",
       "options": {
         "data": {
           "cache-control": "max-age=86400"
         }
+      }
+    },
+    {
+      "name": "put-acl",
+      "options": {
+        "acl": "public-read"
       }
     }
   ]
