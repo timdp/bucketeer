@@ -8,6 +8,9 @@
   ],
   "actions": [
     {
+      "name": "log"
+    },
+    {
       "name": "empty"
     },
     {
