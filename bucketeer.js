@@ -2,22 +2,35 @@ var _ = require('lodash');
 var debug = require('debug')('bucketeer');
 var S3Adapter = require('./lib/s3-adapter.js');
 
+var handleError = function(err) {
+  console.error(err.stack || new Error(err).stack);
+  process.exit(1);
+};
+
+var loadProcessors = function(type) {
+  debug('loadProcessors', type);
+  var plural = type + 's';
+  var result = {};
+  _.uniq(_.pluck(settings[plural], 'name')).forEach(function(name) {
+    try {
+      result[name] = require('./' + plural + '/' + name + '.js');
+    } catch(e) {
+      handleError(new Error('Failed to load ' + type + ' "' + name + '": '
+        + e.message));
+    }
+  });
+  debug('loadedProcessors', type, Object.keys(result));
+  return result;
+};
+
 var auth = require('./config/auth.json');
 var settings = _.assign({
   region: 'us-east-1',
   filters: []
 }, require('./config/settings.json'));
 
-var loadProcessors = function(type) {
-  var result = {};
-  _.uniq(_.pluck(settings[type], 'name')).forEach(function(name) {
-    result[name] = require('./' + type + '/' + name + '.js');
-  });
-  return result;
-};
-
-var filters = loadProcessors('filters');
-var actions = loadProcessors('actions');
+var filters = loadProcessors('filter');
+var actions = loadProcessors('action');
 
 var s3 = new S3Adapter({
   bucket: settings.bucket,
@@ -126,11 +139,6 @@ var applyAndContinue = function(subjects, allowSkip, cb, after) {
     }
   };
   step();
-};
-
-var handleError = function(err) {
-  console.error(err.stack || new Error(err).stack);
-  process.exit(1);
 };
 
 addPrefix('');
