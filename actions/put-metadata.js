@@ -40,11 +40,11 @@ var maybeUpdateObject = function(key, head, options, cb) {
   }
 };
 
-module.exports = function(obj, options, cb) {
-  headObject(obj.Key, options, function(err, head) {
+module.exports = function(obj, context, cb) {
+  headObject(obj.Key, context.options, function(err, head) {
     if (err) {
       return cb(err);
     }
-    maybeUpdateObject(obj.Key, head, options, cb);
+    maybeUpdateObject(obj.Key, head, context.options, cb);
   });
 };

@@ -44,11 +44,11 @@ var compareACL = function(currentACL, newACL) {
   }
 }
 
-module.exports = function(obj, options, cb) {
-  getObjectACL(obj.Key, options, function(err, acl) {
+module.exports = function(obj, context, cb) {
+  getObjectACL(obj.Key, context.options, function(err, acl) {
     if (err) {
       return cb(err);
     }
-    maybePutObjectACL(obj.Key, acl, options, cb);
+    maybePutObjectACL(obj.Key, acl, context.options, cb);
   });
 };

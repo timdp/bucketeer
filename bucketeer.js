@@ -61,16 +61,21 @@ var processObject = function(obj, toNextObj, idx) {
 
 var applyAction = function(action, toNextAction, idx) {
   debug('applyAction', this.Key, idx, action.name, action.options);
-  var opt = (typeof action.options === 'object') ?
-    _.assign({}, options, action.options) : options;
-  actions[action.name](this, opt, toNextAction);
+  applyProcessor(actions[action.name], this, action.options, toNextAction);
 };
 
 var applyFilter = function(filter, toNextFilter, idx) {
   debug('applyFilter', this.Key, idx, filter.name, filter.options);
-  var opt = (typeof filter.options === 'object') ?
-    _.assign({}, options, filter.options) : options;
-  filters[filter.name](this, opt, toNextFilter);
+  applyProcessor(filters[filter.name], this, filter.options, toNextFilter);
+};
+
+var applyProcessor = function(proc, obj, opt, cb) {
+  var context = {
+    options: (typeof opt === 'object') ?
+      _.assign({}, options, opt) :
+      options
+  };
+  proc(obj, context, cb);
 };
 
 var nextBatch = function(marker) {
