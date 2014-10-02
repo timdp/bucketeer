@@ -1,27 +1,26 @@
 var _ = require('lodash');
 var debug = require('debug')('action:put-acl');
 
-var getObjectACL = function(key, options, cb) {
+var getObjectACL = function(key, s3, cb) {
   debug('getObjectACL', key);
-  options.s3.getObjectAcl({
-    Bucket: options.bucket,
+  s3.getObjectAcl({
+    Bucket: s3.bucket,
     Key: key
   }, cb);
 };
 
-var putObjectACL = function(key, acl, options, cb) {
+var putObjectACL = function(key, acl, s3, cb) {
   debug('putObjectACL', key, acl);
-  options.s3.putObjectAcl({
-    Bucket: options.bucket,
+  s3.putObjectAcl({
+    Bucket: s3.bucket,
     Key: key,
     ACL: acl
   }, cb);
 };
 
-var maybePutObjectACL = function(key, currentACL, options, cb) {
-  var newACL = options.acl;
+var maybePutObjectACL = function(key, currentACL, newACL, s3, cb) {
   if (!compareACL(currentACL, newACL)) {
-    putObjectACL(key, newACL, options, cb);
+    putObjectACL(key, newACL, s3, cb);
   } else {
     cb();
   }
@@ -44,11 +43,13 @@ var compareACL = function(currentACL, newACL) {
   }
 }
 
-module.exports = function(obj, context, cb) {
-  getObjectACL(obj.Key, context.options, function(err, acl) {
+module.exports = function(obj, options, cb) {
+  var s3 = this.s3;
+  getObjectACL(obj.Key, s3, function(err, currentACL) {
     if (err) {
       return cb(err);
     }
-    maybePutObjectACL(obj.Key, acl, context.options, cb);
+    var newACL = options.acl;
+    maybePutObjectACL(obj.Key, currentACL, newACL, s3, cb);
   });
 };

@@ -23,11 +23,9 @@ AWS.config.update({
 });
 var s3 = new AWS.S3(); 
 
-var options = {
-  s3: s3,
-  bucket: settings.bucket,
-  region: settings.region
-};
+// Temporary workaround until we have a proxy
+s3.bucket = settings.bucket;
+s3.region = settings.region;
 
 var prefixQueue = [],
     seenPrefixes = {},
@@ -71,11 +69,9 @@ var applyFilter = function(filter, toNextFilter, idx) {
 
 var applyProcessor = function(proc, obj, opt, cb) {
   var context = {
-    options: (typeof opt === 'object') ?
-      _.assign({}, options, opt) :
-      options
+    s3: s3
   };
-  proc(obj, context, cb);
+  proc.bind(context)(obj, opt || {}, cb);
 };
 
 var nextBatch = function(marker) {
