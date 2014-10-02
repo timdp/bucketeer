@@ -44,15 +44,21 @@ var handleList = function(err, data) {
       nextBatch(data.NextMarker);
     } :
     nextPrefix;
-  applyAndContinue(data.Contents, false, processObject, afterwards);
+  applyAndContinue(data.Contents, false,
+    processObject,
+    afterwards);
 };
 
 var processObject = function(obj, toNextObj, idx) {
   debug('applyFiltersToObject', idx, obj.Key);
-  applyAndContinue(settings.filters, true, applyFilter.bind(obj), function(err, result) {
+  applyAndContinue(settings.filters, true,
+    applyFilter.bind(obj),
+    function(err, result) {
       if (result) {
         debug('applyActions', obj.Key);
-        applyAndContinue(settings.actions, false, applyAction.bind(obj), toNextObj);
+        applyAndContinue(settings.actions, false,
+          applyAction.bind(obj),
+          toNextObj);
       } else {
         toNextObj();
       }
