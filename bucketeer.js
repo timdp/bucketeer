@@ -1,10 +1,31 @@
 var _ = require('lodash');
-var debug = require('debug')('bucketeer');
 var S3Adapter = require('./lib/s3-adapter.js');
+var CloudFrontAdapter = require('./lib/cloudfront-adapter.js');
+var debug = require('debug')('bucketeer');
+
+var s3 = null,
+    cloudfront = null,
+    eventListeners = {},
+    prefixQueue = [],
+    seenPrefixes = {},
+    currentPrefix = null;
 
 var handleError = function(err) {
   console.error(err.stack || new Error(err).stack);
   process.exit(1);
+};
+
+var createContext = function() {
+  return {
+    s3: s3,
+    cloudfront: cloudfront,
+    on: function(name, cb) {
+      if (!eventListeners.hasOwnProperty(name)) {
+        eventListeners[name] = [];
+      }
+      eventListeners[name].push(cb);
+    }
+  };
 };
 
 var loadProcessors = function(type) {
@@ -12,11 +33,25 @@ var loadProcessors = function(type) {
   var plural = type + 's';
   var result = {};
   _.uniq(_.pluck(settings[plural], 'name')).forEach(function(name) {
+    var proc = null;
     try {
-      result[name] = require('./' + plural + '/' + name + '.js');
+      proc = require('./' + plural + '/' + name + '.js');
     } catch(e) {
       handleError(new Error('Failed to load ' + type + ' "' + name + '": '
         + e.message));
+    }
+    if (proc !== null) {
+      switch (typeof proc) {
+        case 'function':
+          result[name] = proc;
+          break;
+        case 'object':
+          result[name] = proc.run;
+          if (typeof proc.init === 'function') {
+            proc.init.call(createContext());
+          }
+          break;
+      }
     }
   });
   debug('loadedProcessors', type, Object.keys(result));
@@ -29,19 +64,24 @@ var settings = _.assign({
   filters: []
 }, require('./config/settings.json'));
 
-var filters = loadProcessors('filter');
-var actions = loadProcessors('action');
-
-var s3 = new S3Adapter({
+s3 = new S3Adapter({
   bucket: settings.bucket,
   region: settings.region,
   key: auth.key,
   secret: auth.secret
 });
 
-var prefixQueue = [],
-    seenPrefixes = {},
-    currentPrefix = null;
+if (typeof settings.cloudfront === 'object' &&
+    typeof settings.cloudfront.distribution === 'string') {
+  cloudfront = new CloudFrontAdapter({
+    distribution: settings.cloudfront.distribution,
+    key: auth.key,
+    secret: auth.secret
+  });
+}
+
+var filters = loadProcessors('filter');
+var actions = loadProcessors('action');
 
 var handleList = function(err, data) {
   if (err) {
@@ -86,10 +126,7 @@ var applyAction = function(action, toNextAction, idx) {
 };
 
 var applyProcessor = function(proc, obj, opt, cb) {
-  var ctx = {
-    s3: s3
-  };
-  proc.call(ctx, obj, opt || {}, cb);
+  proc.call(createContext(), obj, opt || {}, cb);
 };
 
 var addPrefix = function(prefix) {  
@@ -113,8 +150,25 @@ var nextPrefix = function() {
     debug('nextPrefix', currentPrefix);
     nextBatch();
   } else {
-    debug('done');
+    debug('allObjectsProcessed');
+    postprocess();
   }
+};
+
+var postprocess = function() {
+  if (eventListeners.hasOwnProperty('allObjectsProcessed')) {
+    applyAndContinue(eventListeners.allObjectsProcessed, false,
+      function(listener, toNextListener, idx) {
+        listener.call(createContext(), toNextListener);
+      },
+      done);
+  } else {
+    done();
+  }
+};
+
+var done = function() {
+  debug('done');
 };
 
 var nextBatch = function(marker) {
