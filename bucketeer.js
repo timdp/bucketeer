@@ -65,14 +65,14 @@ var processObject = function(obj, toNextObj, idx) {
     });
 };
 
-var applyAction = function(action, toNextAction, idx) {
-  debug('applyAction', this.Key, idx, action.name, action.options);
-  applyProcessor(actions[action.name], this, action.options, toNextAction);
-};
-
 var applyFilter = function(filter, toNextFilter, idx) {
   debug('applyFilter', this.Key, idx, filter.name, filter.options);
   applyProcessor(filters[filter.name], this, filter.options, toNextFilter);
+};
+
+var applyAction = function(action, toNextAction, idx) {
+  debug('applyAction', this.Key, idx, action.name, action.options);
+  applyProcessor(actions[action.name], this, action.options, toNextAction);
 };
 
 var applyProcessor = function(proc, obj, opt, cb) {
