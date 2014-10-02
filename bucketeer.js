@@ -59,18 +59,18 @@ var handleList = function(err, data) {
     afterwards);
 };
 
-var processObject = function(obj, toNextObj, idx) {
+var processObject = function(obj, toNextObject, idx) {
   debug('applyFiltersToObject', idx, obj.Key);
   applyAndContinue(settings.filters, true,
     applyFilter.bind(obj),
     function(err, result) {
       if (result) {
-        debug('applyActions', obj.Key);
+        debug('applyActionsToObject', obj.Key);
         applyAndContinue(settings.actions, false,
           applyAction.bind(obj),
-          toNextObj);
+          toNextObject);
       } else {
-        toNextObj();
+        toNextObject();
       }
     });
 };
