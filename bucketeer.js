@@ -129,7 +129,7 @@ var applyAndContinue = function(subjects, allowSkip, cb, after) {
 };
 
 var handleError = function(err) {
-  console.error(err.stack || new Error().stack);
+  console.error(err.stack || new Error(err).stack);
   process.exit(1);
 };
 
