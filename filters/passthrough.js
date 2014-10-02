@@ -1,4 +1,4 @@
-var debug = require('debug')('filter:passthrough');
+var debug = require('debug')('bucketeer/filter/passthrough');
 
 module.exports = function(obj, options, cb) {
   debug('run', obj.Key);

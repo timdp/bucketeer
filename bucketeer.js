@@ -1,6 +1,6 @@
-var AWS = require('aws-sdk');
 var _ = require('lodash');
 var debug = require('debug')('bucketeer');
+var S3Adapter = require('./lib/s3-adapter.js');
 
 var auth = require('./config/auth.json');
 var settings = _.assign({
@@ -16,16 +16,15 @@ _.uniq(_.pluck(settings.actions, 'name')).forEach(function(name) {
   actions[name] = require('./actions/' + name + '.js');
 });
 
-AWS.config.update({
-  accessKeyId: auth.key,
-  secretAccessKey: auth.secret,
-  region: settings.region
+var s3 = new S3Adapter({
+  bucket: settings.bucket,
+  region: settings.region,
+  key: auth.key,
+  secret: auth.secret
 });
-var s3 = new AWS.S3(); 
-
-// Temporary workaround until we have a proxy
-s3.bucket = settings.bucket;
-s3.region = settings.region;
+var procContext = {
+  s3: s3
+};
 
 var prefixQueue = [],
     seenPrefixes = {},
@@ -68,24 +67,11 @@ var applyFilter = function(filter, toNextFilter, idx) {
 };
 
 var applyProcessor = function(proc, obj, opt, cb) {
-  var context = {
-    s3: s3
-  };
-  proc.bind(context)(obj, opt || {}, cb);
+  proc.bind(procContext)(obj, opt || {}, cb);
 };
 
 var nextBatch = function(marker) {
-  var params = {
-    Bucket: settings.bucket,
-    Delimiter: '/',
-    EncodingType: 'url',
-    MaxKeys: settings.maxKeys || 100,
-    Prefix: currentPrefix
-  };
-  if (typeof marker !== 'undefined') {
-    params.Marker = marker;
-  }
-  s3.listObjects(params, handleList);
+  s3.listObjects(currentPrefix, marker, null, handleList);
 };
 
 var addPrefix = function(prefix) {  

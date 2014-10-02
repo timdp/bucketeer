@@ -1,4 +1,4 @@
-var debug = require('debug')('filter:block');
+var debug = require('debug')('bucketeer/filter/block');
 
 module.exports = function(obj, options, cb) {
   debug('run', obj.Key);
