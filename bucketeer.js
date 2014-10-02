@@ -76,7 +76,7 @@ var applyFilter = function(filter, toNextFilter, idx) {
 };
 
 var applyProcessor = function(proc, obj, opt, cb) {
-  proc.bind(procContext)(obj, opt || {}, cb);
+  proc.call(procContext, obj, opt || {}, cb);
 };
 
 var addPrefix = function(prefix) {  
