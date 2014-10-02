@@ -38,9 +38,6 @@ var s3 = new S3Adapter({
   key: auth.key,
   secret: auth.secret
 });
-var procContext = {
-  s3: s3
-};
 
 var prefixQueue = [],
     seenPrefixes = {},
@@ -89,7 +86,10 @@ var applyAction = function(action, toNextAction, idx) {
 };
 
 var applyProcessor = function(proc, obj, opt, cb) {
-  proc.call(procContext, obj, opt || {}, cb);
+  var ctx = {
+    s3: s3
+  };
+  proc.call(ctx, obj, opt || {}, cb);
 };
 
 var addPrefix = function(prefix) {  
