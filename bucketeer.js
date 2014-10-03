@@ -5,7 +5,6 @@ var debug = require('debug')('bucketeer');
 
 var s3 = null,
     cloudfront = null,
-    eventListeners = {},
     prefixQueue = [],
     seenPrefixes = {},
     currentPrefix = null;
@@ -15,46 +14,27 @@ var handleError = function(err) {
   process.exit(1);
 };
 
-var createContext = function() {
-  return {
-    s3: s3,
-    cloudfront: cloudfront,
-    on: function(name, cb) {
-      if (!eventListeners.hasOwnProperty(name)) {
-        eventListeners[name] = [];
-      }
-      eventListeners[name].push(cb);
-    }
-  };
-};
-
-var loadProcessors = function(type) {
-  debug('loadProcessors', type);
-  var plural = type + 's';
+var loadActions = function() {
+  debug('loadActions');
   var result = {};
-  _.uniq(_.pluck(settings[plural], 'name')).forEach(function(name) {
-    var proc = null;
+  var ctx = {
+    s3: s3,
+    cloudfront: cloudfront
+  };
+  _.uniq(settings.actions).forEach(function(action) {
+    var obj = null;
     try {
-      proc = require('./' + plural + '/' + name + '.js');
+      var cls = require('./' + action.type + 's/' + action.name + '.js');
+      obj = new cls(ctx);
     } catch(e) {
-      handleError(new Error('Failed to load ' + type + ' "' + name + '": '
+      handleError(new Error('Failed to load action "' + action.name + '": '
         + e.message));
     }
-    if (proc !== null) {
-      switch (typeof proc) {
-        case 'function':
-          result[name] = proc;
-          break;
-        case 'object':
-          result[name] = proc.run;
-          if (typeof proc.init === 'function') {
-            proc.init.call(createContext());
-          }
-          break;
-      }
+    if (obj !== null) {
+      result[action.name] = obj;
     }
   });
-  debug('loadedProcessors', type, Object.keys(result));
+  debug('loadedActions', Object.keys(result));
   return result;
 };
 
@@ -80,8 +60,7 @@ if (typeof settings.cloudfront === 'object' &&
   });
 }
 
-var filters = loadProcessors('filter');
-var actions = loadProcessors('action');
+var actions = loadActions();
 
 var handleList = function(err, data) {
   if (err) {
@@ -94,40 +73,56 @@ var handleList = function(err, data) {
       nextBatch(data.NextMarker);
     } :
     nextPrefix;
-  applyAndContinue(data.Contents, false,
+  applyAndContinue(data.Contents,
     processObject,
     afterwards);
 };
 
 var processObject = function(obj, toNextObject, idx) {
-  debug('applyFiltersToObject', idx, obj.Key);
-  applyAndContinue(settings.filters, true,
-    applyFilter.bind(obj),
-    function(err, result) {
-      if (result) {
-        debug('applyActionsToObject', obj.Key);
-        applyAndContinue(settings.actions, false,
-          applyAction.bind(obj),
-          toNextObject);
-      } else {
-        toNextObject();
+  debug('processObject', idx, obj.Key);
+  applyAndContinue(settings.actions,
+    createFallthrough(obj, toNextObject),
+    toNextObject);
+};
+
+var createFallthrough = function(obj, toNextObject) {
+  return function(action, toNextAction, idx) {
+    applyAction(obj, action, function(err, result) {
+      if (err) {
+        return toNextAction(err);
       }
-    });
+      // If the action was a filter, we got false here.
+      if (result === false) {
+        toNextObject();
+      } else {
+        toNextAction();
+      }
+    }, idx);
+  };
 };
 
-var applyFilter = function(filter, toNextFilter, idx) {
-  debug('applyFilter', this.Key, idx, filter.name, filter.options);
-  applyProcessor(filters[filter.name], this, filter.options, toNextFilter);
+var applyAction = function(obj, action, toNextAction, idx) {
+  debug('applyAction', obj.Key, idx, action.type, action.name, action.options);
+  var cb = getActionCallback(action, toNextAction);
+  actions[action.name].run(obj, action.options || {}, cb);
 };
 
-var applyAction = function(action, toNextAction, idx) {
-  debug('applyAction', this.Key, idx, action.name, action.options);
-  applyProcessor(actions[action.name], this, action.options, toNextAction);
-};
-
-var applyProcessor = function(proc, obj, opt, cb) {
-  proc.call(createContext(), obj, opt || {}, cb);
-};
+var getActionCallback = function(action, toNextAction) {
+  if (action.type !== 'filter') {
+    return toNextAction;
+  }
+  return function(err, result) {
+    if (err) {
+      return toNextAction(err);
+    }
+    // The action is a filter and it returned false. Pass that along.
+    if (result === false) {
+      toNextAction(null, false);
+    } else {
+      toNextAction();
+    }
+  };  
+}
 
 var addPrefix = function(prefix) {  
   if (!seenPrefixes.hasOwnProperty(prefix)) {
@@ -150,21 +145,23 @@ var nextPrefix = function() {
     debug('nextPrefix', currentPrefix);
     nextBatch();
   } else {
-    debug('allObjectsProcessed');
-    postprocess();
+    disposeActions();
   }
 };
 
-var postprocess = function() {
-  if (eventListeners.hasOwnProperty('allObjectsProcessed')) {
-    applyAndContinue(eventListeners.allObjectsProcessed, false,
-      function(listener, toNextListener, idx) {
-        listener.call(createContext(), toNextListener);
-      },
-      done);
-  } else {
-    done();
-  }
+var disposeActions = function() {
+  debug('disposeActions');
+  var toDispose = Object.keys(actions).filter(function(name) {
+    return (typeof actions[name].dispose === 'function');
+  });
+  applyAndContinue(toDispose,
+    disposeAction,
+    done);
+};
+
+var disposeAction = function(name, toNextAction, idx) {
+  debug('disposeAction', name);
+  actions[name].dispose(toNextAction);
 };
 
 var done = function() {
@@ -175,18 +172,15 @@ var nextBatch = function(marker) {
   s3.listObjects(currentPrefix, marker, null, handleList);
 };
 
-var applyAndContinue = function(subjects, allowSkip, cb, after) {
+var applyAndContinue = function(subjects, cb, after) {
   var i = 0;
   var step = function(err, result) {
     if (err) {
       return handleError(err);
     }
-    if (allowSkip && result === false) {
-      debug('skip', i);
-      after(null, false);
-    } else if (i >= subjects.length) {
+    if (i >= subjects.length) {
       debug('after');
-      after(null, true);
+      after();
     } else {
       debug('apply', i);
       cb(subjects[i], step, i++);

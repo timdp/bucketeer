@@ -1,19 +1,21 @@
 {
   "bucket": "...",
   "region": "us-east-1",
-  "filters": [
-    {
-      "name": "passthrough"
-    }
-  ],
   "actions": [
     {
+      "type": "task",
       "name": "log"
     },
     {
+      "type": "filter",
+      "name": "passthrough"
+    },
+    {
+      "type": "task",
       "name": "empty"
     },
     {
+      "type": "task",
       "name": "put-metadata",
       "options": {
         "data": {
@@ -22,6 +24,7 @@
       }
     },
     {
+      "type": "task",
       "name": "put-acl",
       "options": {
         "acl": "public-read"

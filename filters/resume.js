@@ -1,12 +1,17 @@
 var debug = require('debug')('bucketeer/filter/resume');
 
-var allow = false;
-
-module.exports = function(obj, options, cb) {
-  debug('run', obj.Key);
-  if (!allow && new RegExp(options.pattern).test(obj.Key)) {
-    debug('matched', obj.Key, options.pattern)
-    allow = true;
-  }
-  cb(null, allow);
+var Filter = function(context) {
+  this.context = context;
+  this.allow = false;
 };
+
+Filter.prototype.run = function(obj, options, cb) {
+  debug('run', obj.Key);
+  if (!this.allow && new RegExp(options.pattern).test(obj.Key)) {
+    debug('matched', obj.Key, options.pattern)
+    this.allow = true;
+  }
+  cb(null, this.allow);
+};
+
+module.exports = Filter;

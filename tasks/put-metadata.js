@@ -20,8 +20,13 @@ var maybeUpdateObject = function(key, head, newData, s3, cb) {
   }
 };
 
-module.exports = function(obj, options, cb) {
-  var s3 = this.s3;
+var Action = function(context) {
+  this.context = context;
+};
+
+Action.prototype.run = function(obj, options, cb) {
+  debug('run', obj.Key);
+  var s3 = this.context.s3;
   s3.headObject(obj.Key, function(err, head) {
     if (err) {
       return cb(err);
@@ -29,3 +34,5 @@ module.exports = function(obj, options, cb) {
     maybeUpdateObject(obj.Key, head, options.data, s3, cb);
   });
 };
+
+module.exports = Action;

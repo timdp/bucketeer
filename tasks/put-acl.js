@@ -16,10 +16,15 @@ var compareAcl = function(currentAcl, newAcl) {
     default:
       throw new Error('Unknown ACL setting: ' + newAcl);
   }
-}
+};
 
-module.exports = function(obj, options, cb) {
-  var s3 = this.s3;
+var Action = function(context) {
+  this.context = context;
+};
+
+Action.prototype.run = function(obj, options, cb) {
+  debug('run', obj.Key);
+  var s3 = this.context.s3;
   s3.getObjectAcl(obj.Key, function(err, currentAcl) {
     if (err) {
       return cb(err);
@@ -31,3 +36,5 @@ module.exports = function(obj, options, cb) {
     }
   });
 };
+
+module.exports = Action;

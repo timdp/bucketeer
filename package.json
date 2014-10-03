@@ -1,7 +1,7 @@
 {
   "name": "bucketeer",
   "description": "Bulk-updates objects inside an Amazon S3 bucket.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "homepage": "https://github.com/timdp/bucketeer",
   "author": {
     "name": "Tim De Pauw",
@@ -28,7 +28,6 @@
     "aws-sdk": "^2.0.18",
     "debug": "^2.0.0",
     "lodash": "^2.4.1",
-    "node-uuid": "^1.4.1",
-    "q": "^1.0.1"
+    "node-uuid": "^1.4.1"
   }
 }
