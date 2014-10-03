@@ -1,4 +1,4 @@
-var debug = require('debug')('bucketeer/action/empty');
+var debug = require('debug')('bucketeer/task/empty');
 
 var Action = function(context) {
   this.context = context;

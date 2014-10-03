@@ -1,5 +1,5 @@
 var _ = require('lodash');
-var debug = require('debug')('bucketeer/action/cloudfront-invalidate');
+var debug = require('debug')('bucketeer/task/cloudfront-invalidate');
 
 var Action = function(context) {
   this.context = context;

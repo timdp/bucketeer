@@ -1,5 +1,5 @@
 var _ = require('lodash');
-var debug = require('debug')('bucketeer/action/put-metadata');
+var debug = require('debug')('bucketeer/task/put-metadata');
 
 var maybeUpdateObject = function(key, head, newData, s3, cb) {
   var change = false;

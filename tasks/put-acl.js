@@ -1,5 +1,5 @@
 var _ = require('lodash');
-var debug = require('debug')('bucketeer/action/put-acl');
+var debug = require('debug')('bucketeer/task/put-acl');
 
 // TODO Support other settings
 var compareAcl = function(currentAcl, newAcl) {
