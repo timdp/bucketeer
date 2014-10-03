@@ -3,24 +3,46 @@ var S3Adapter = require('./lib/s3-adapter.js');
 var CloudFrontAdapter = require('./lib/cloudfront-adapter.js');
 var debug = require('debug')('bucketeer');
 
-var s3 = null,
+var settings = null,
+    actions = null,
+    s3 = null,
     cloudfront = null,
     prefixQueue = [],
     seenPrefixes = {},
     currentPrefix = null;
 
-var handleError = function(err) {
-  console.error(err.stack || new Error(err).stack);
-  process.exit(1);
+var run = function() {
+  var auth = require('./config/auth.json');
+  settings = _.assign({
+    region: 'us-east-1',
+    filters: []
+  }, require('./config/settings.json'));
+  s3 = new S3Adapter({
+    bucket: settings.bucket,
+    region: settings.region,
+    key: auth.key,
+    secret: auth.secret
+  });
+  if (typeof settings.cloudfront === 'object' &&
+      typeof settings.cloudfront.distribution === 'string') {
+    cloudfront = new CloudFrontAdapter({
+      distribution: settings.cloudfront.distribution,
+      key: auth.key,
+      secret: auth.secret
+    });
+  }
+  loadActions();
+  addPrefix('');
+  nextPrefix();
 };
 
 var loadActions = function() {
   debug('loadActions');
-  var result = {};
   var ctx = {
     s3: s3,
     cloudfront: cloudfront
   };
+  actions = {};
   _.uniq(settings.actions).forEach(function(action) {
     var obj = null;
     try {
@@ -31,36 +53,33 @@ var loadActions = function() {
         + e.message));
     }
     if (obj !== null) {
-      result[action.name] = obj;
+      actions[action.name] = obj;
     }
   });
-  debug('loadedActions', Object.keys(result));
-  return result;
+  debug('loadedActions', Object.keys(actions));
 };
 
-var auth = require('./config/auth.json');
-var settings = _.assign({
-  region: 'us-east-1',
-  filters: []
-}, require('./config/settings.json'));
+var addPrefix = function(prefix) {
+  if (!seenPrefixes.hasOwnProperty(prefix)) {
+    debug('addPrefix', prefix);
+    seenPrefixes[prefix] = true;
+    prefixQueue.push(prefix);
+  }
+};
 
-s3 = new S3Adapter({
-  bucket: settings.bucket,
-  region: settings.region,
-  key: auth.key,
-  secret: auth.secret
-});
+var nextPrefix = function() {
+  if (prefixQueue.length) {
+    currentPrefix = prefixQueue.shift();
+    debug('nextPrefix', currentPrefix);
+    nextBatch();
+  } else {
+    disposeActions();
+  }
+};
 
-if (typeof settings.cloudfront === 'object' &&
-    typeof settings.cloudfront.distribution === 'string') {
-  cloudfront = new CloudFrontAdapter({
-    distribution: settings.cloudfront.distribution,
-    key: auth.key,
-    secret: auth.secret
-  });
-}
-
-var actions = loadActions();
+var nextBatch = function(marker) {
+  s3.listObjects(currentPrefix, marker, null, handleList);
+};
 
 var handleList = function(err, data) {
   if (err) {
@@ -76,6 +95,13 @@ var handleList = function(err, data) {
   applyAndContinue(data.Contents,
     processObject,
     afterwards);
+};
+
+var checkPrefixes = function(prefixes) {
+  _.pluck(prefixes, 'Prefix')
+    .filter(function(prefix) {
+      return (prefix !== '/');
+    }).forEach(addPrefix);
 };
 
 var processObject = function(obj, toNextObject, idx) {
@@ -121,33 +147,8 @@ var getActionCallback = function(action, toNextAction) {
     } else {
       toNextAction();
     }
-  };  
+  };
 }
-
-var addPrefix = function(prefix) {  
-  if (!seenPrefixes.hasOwnProperty(prefix)) {
-    debug('addPrefix', prefix);
-    seenPrefixes[prefix] = true;
-    prefixQueue.push(prefix);
-  }
-};
-
-var checkPrefixes = function(prefixes) {
-  _.pluck(prefixes, 'Prefix')
-    .filter(function(prefix) {
-      return (prefix !== '/');
-    }).forEach(addPrefix);
-};
-
-var nextPrefix = function() {
-  if (prefixQueue.length) {
-    currentPrefix = prefixQueue.shift();
-    debug('nextPrefix', currentPrefix);
-    nextBatch();
-  } else {
-    disposeActions();
-  }
-};
 
 var disposeActions = function() {
   debug('disposeActions');
@@ -168,10 +169,6 @@ var done = function() {
   debug('done');
 };
 
-var nextBatch = function(marker) {
-  s3.listObjects(currentPrefix, marker, null, handleList);
-};
-
 var applyAndContinue = function(subjects, cb, after) {
   var i = 0;
   var step = function(err, result) {
@@ -189,5 +186,9 @@ var applyAndContinue = function(subjects, cb, after) {
   step();
 };
 
-addPrefix('');
-nextPrefix();
+var handleError = function(err) {
+  console.error(err.stack || new Error(err).stack);
+  process.exit(1);
+};
+
+run();
