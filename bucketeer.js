@@ -49,8 +49,8 @@ var loadActions = function() {
       var cls = require('./' + action.type + 's/' + action.name + '.js');
       obj = new cls(ctx);
     } catch(e) {
-      handleError(new Error('Failed to load action "' + action.name + '": '
-        + e.message));
+      handleError(new Error('Failed to load action "' + action.name + '": ' +
+        e.message));
     }
     if (obj !== null) {
       actions[action.name] = obj;
@@ -148,7 +148,7 @@ var getActionCallback = function(action, toNextAction) {
       toNextAction();
     }
   };
-}
+};
 
 var disposeActions = function() {
   debug('disposeActions');
