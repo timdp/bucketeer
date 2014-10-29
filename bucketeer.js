@@ -87,7 +87,7 @@ var handleList = function(err, data) {
   }
   checkPrefixes(data.CommonPrefixes);
   debug('handleList', _.pluck(data.Contents, 'Key'));
-  var afterwards = data.isTruncated ?
+  var afterwards = (typeof data.NextMarker !== 'undefined') ?
     function() {
       nextBatch(data.NextMarker);
     } :
