@@ -12,7 +12,6 @@ var compareAcl = function(currentAcl, newAcl) {
           URI: 'http://acs.amazonaws.com/groups/global/AllUsers'
         }
       }).length;
-      break;
     default:
       throw new Error('Unknown ACL setting: ' + newAcl);
   }

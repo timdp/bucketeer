@@ -1,10 +1,9 @@
-var _ = require('lodash');
 var debug = require('debug')('bucketeer/task/cloudfront-invalidate');
 
 var Action = function(context) {
   this.context = context;
   this.pathsToInvalidate = [];
-}
+};
 
 Action.prototype.dispose = function(cb) {
   this.invalidate(cb);
@@ -30,6 +29,6 @@ Action.prototype.invalidate = function(cb) {
     paths.length = 0;
     cb();
   });
-}
+};
 
 module.exports = Action;

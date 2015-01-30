@@ -16,10 +16,10 @@
     },
     {
       "type": "task",
-      "name": "put-metadata",
+      "name": "update-object",
       "options": {
-        "data": {
-          "cache-control": "max-age=86400"
+        "params": {
+          "CacheControl": "public, max-age=86400"
         }
       }
     },
