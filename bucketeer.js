@@ -1,6 +1,6 @@
 var _ = require('lodash');
-var S3Adapter = require('./lib/s3-adapter.js');
-var CloudFrontAdapter = require('./lib/cloudfront-adapter.js');
+var S3Facade = require('./lib/s3-facade.js');
+var CloudFrontFacade = require('./lib/cloudfront-facade.js');
 var debug = require('debug')('bucketeer');
 
 var settings = null,
@@ -17,7 +17,7 @@ var run = function() {
     region: 'us-east-1',
     filters: []
   }, require('./config/settings.json'));
-  s3 = new S3Adapter({
+  s3 = new S3Facade({
     bucket: settings.bucket,
     region: settings.region,
     key: auth.key,
@@ -25,7 +25,7 @@ var run = function() {
   });
   if (typeof settings.cloudfront === 'object' &&
       typeof settings.cloudfront.distribution === 'string') {
-    cloudfront = new CloudFrontAdapter({
+    cloudfront = new CloudFrontFacade({
       distribution: settings.cloudfront.distribution,
       key: auth.key,
       secret: auth.secret
