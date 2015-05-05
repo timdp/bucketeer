@@ -1,12 +1,12 @@
 {
   "name": "bucketeer",
-  "description": "Bulk-updates objects inside an Amazon S3 bucket.",
+  "description": "Bulk-processes objects inside an Amazon S3 bucket.",
   "version": "0.3.0",
   "homepage": "https://github.com/timdp/bucketeer",
   "author": {
     "name": "Tim De Pauw",
     "email": "hi@tmdpw.eu",
-    "url": "http://tmdpw.eu/"
+    "url": "https://tmdpw.eu/"
   },
   "repository": {
     "type": "git",
