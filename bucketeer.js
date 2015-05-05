@@ -1,6 +1,7 @@
 var _ = require('lodash')
 var S3Facade = require('./lib/s3-facade.js')
 var CloudFrontFacade = require('./lib/cloudfront-facade.js')
+var Minivault = require('minivault-core')
 var debug = require('debug')('bucketeer')
 
 var settings = null
@@ -11,29 +12,9 @@ var prefixQueue = []
 var seenPrefixes = {}
 var currentPrefix = null
 
-var run = function () {
-  var auth = require('./config/auth.json')
-  settings = _.assign({
-    region: 'us-east-1',
-    filters: []
-  }, require('./config/settings.json'))
-  s3 = new S3Facade({
-    bucket: settings.bucket,
-    region: settings.region,
-    key: auth.key,
-    secret: auth.secret
-  })
-  if (typeof settings.cloudfront === 'object' &&
-    typeof settings.cloudfront.distribution === 'string') {
-    cloudfront = new CloudFrontFacade({
-      distribution: settings.cloudfront.distribution,
-      key: auth.key,
-      secret: auth.secret
-    })
-  }
-  loadActions()
-  addPrefix('')
-  nextPrefix()
+var handleError = function (err) {
+  console.error(err.stack || new Error(err).stack)
+  process.exit(1)
 }
 
 var loadActions = function () {
@@ -186,9 +167,38 @@ var applyAndContinue = function (subjects, cb, after) {
   step()
 }
 
-var handleError = function (err) {
-  console.error(err.stack || new Error(err).stack)
-  process.exit(1)
+var getAuth = function () {
+  try {
+    return new Minivault(require('../.minivault.json')).getSync('aws')
+  } catch (e) {
+    debug('minivaultFailure', e)
+  }
+  return require('./config/auth.json')
+}
+
+var run = function () {
+  var auth = getAuth()
+  settings = _.assign({
+    region: 'us-east-1',
+    filters: []
+  }, require('./config/settings.json'))
+  s3 = new S3Facade({
+    bucket: settings.bucket,
+    region: settings.region,
+    key: auth.key,
+    secret: auth.secret
+  })
+  if (typeof settings.cloudfront === 'object' &&
+    typeof settings.cloudfront.distribution === 'string') {
+    cloudfront = new CloudFrontFacade({
+      distribution: settings.cloudfront.distribution,
+      key: auth.key,
+      secret: auth.secret
+    })
+  }
+  loadActions()
+  addPrefix('')
+  nextPrefix()
 }
 
 run()
