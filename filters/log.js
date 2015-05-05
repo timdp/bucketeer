@@ -1,3 +1,5 @@
+'use strict'
+
 var debug = require('debug')('bucketeer/filter/log')
 
 var Filter = function (context) {

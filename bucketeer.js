@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('lodash')
 var S3Facade = require('./lib/s3-facade.js')
 var CloudFrontFacade = require('./lib/cloudfront-facade.js')

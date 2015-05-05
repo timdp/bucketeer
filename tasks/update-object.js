@@ -1,3 +1,5 @@
+'use strict'
+
 var _ = require('lodash')
 var debug = require('debug')('bucketeer/task/update-object')
 

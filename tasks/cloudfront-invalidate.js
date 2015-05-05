@@ -1,3 +1,5 @@
+'use strict'
+
 var debug = require('debug')('bucketeer/task/cloudfront-invalidate')
 
 var Action = function (context) {
