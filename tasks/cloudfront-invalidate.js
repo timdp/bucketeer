@@ -1,34 +1,34 @@
-var debug = require('debug')('bucketeer/task/cloudfront-invalidate');
+var debug = require('debug')('bucketeer/task/cloudfront-invalidate')
 
-var Action = function(context) {
-  this.context = context;
-  this.pathsToInvalidate = [];
-};
+var Action = function (context) {
+  this.context = context
+  this.pathsToInvalidate = []
+}
 
-Action.prototype.dispose = function(cb) {
-  this.invalidate(cb);
-};
+Action.prototype.dispose = function (cb) {
+  this.invalidate(cb)
+}
 
-Action.prototype.run = function(obj, options, cb) {
-  debug('run', obj.Key);
-  this.pathsToInvalidate.push('/' + obj.Key);
+Action.prototype.run = function (obj, options, cb) {
+  debug('run', obj.Key)
+  this.pathsToInvalidate.push('/' + obj.Key)
   if (this.pathsToInvalidate.length >= 1000) {
-    this.invalidate(cb);
+    this.invalidate(cb)
   } else {
-    cb();
+    cb()
   }
-};
+}
 
-Action.prototype.invalidate = function(cb) {
-  debug('invalidate', this.pathsToInvalidate);
-  var paths = this.pathsToInvalidate;
-  this.context.cloudfront.createInvalidation(paths, function(err, result) {
+Action.prototype.invalidate = function (cb) {
+  debug('invalidate', this.pathsToInvalidate)
+  var paths = this.pathsToInvalidate
+  this.context.cloudfront.createInvalidation(paths, function (err, result) {
     if (err) {
-      return cb(err);
+      return cb(err)
     }
-    paths.length = 0;
-    cb();
-  });
-};
+    paths.length = 0
+    cb()
+  })
+}
 
-module.exports = Action;
+module.exports = Action
