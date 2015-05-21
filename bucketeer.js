@@ -4,7 +4,9 @@ var _ = require('lodash')
 var S3Facade = require('./lib/s3-facade.js')
 var CloudFrontFacade = require('./lib/cloudfront-facade.js')
 var Minivault = require('minivault-core')
+var userHome = require('user-home')
 var debug = require('debug')('bucketeer')
+var path = require('path')
 
 var settings = null
 var actions = null
@@ -170,8 +172,9 @@ var applyAndContinue = function (subjects, cb, after) {
 }
 
 var getAuth = function () {
+  var configFile = path.join(userHome, '.minivault.json')
   try {
-    return new Minivault(require('../.minivault.json')).getSync('aws')
+    return new Minivault(require(configFile)).getSync('aws')
   } catch (e) {
     debug('minivaultFailure', e)
   }
