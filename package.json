@@ -1,7 +1,7 @@
 {
   "name": "bucketeer",
   "description": "Bulk-processes objects inside an Amazon S3 bucket.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "homepage": "https://github.com/timdp/bucketeer",
   "author": {
     "name": "Tim De Pauw",
