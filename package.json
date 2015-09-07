@@ -8,10 +8,7 @@
     "email": "hi@tmdpw.eu",
     "url": "https://tmdpw.eu/"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/timdp/bucketeer.git"
-  },
+  "repository": "timdp/bucketeer",
   "bugs": {
     "url": "https://github.com/timdp/bucketeer/issues"
   },
